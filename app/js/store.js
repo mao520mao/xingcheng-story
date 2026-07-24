@@ -10,7 +10,7 @@
 
   var DEFAULT_SETTINGS = {
     age: 8, // 小橙子的阅读年龄 8-13
-    preferences: ['奇幻冒险'], // 故事偏好（多选）
+    preferences: ['王尔德','安徒生'], // 故事偏好（V17 仅 2 个：王尔德 / 安徒生）
     voice: 'mom', // 朗读音色：mom / sister / story / night
     speed: 1.0, // 朗读语速：0.8 / 1.0 / 1.2
     fontSize: 'md', // 阅读字号：sm / md / lg / xl（默认标准，设置页不再提供调节）

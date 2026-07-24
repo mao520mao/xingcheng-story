@@ -15,7 +15,8 @@
   function _loadStories(){
     if(_storiesReady) return;                 // 已成功加载，不再重复
     try{
-      stories = (window.STORY_LIBRARY || []).concat(window.STORY_LIBRARY_EXT || []).concat(window.STORY_LIBRARY_USER || []).concat(window.STORY_LIBRARY_CN || []).concat(window.STORY_LIBRARY_HISTORY || []);
+      // V17 起：仅保留「王尔德童话 / 安徒生童话」两库，合并进 STORY_LIBRARY_EXT
+      stories = (window.STORY_LIBRARY_EXT || []);
     }catch(e){
       stories = [];
       if(window.console) console.error('story data load failed', e);
@@ -58,11 +59,11 @@
     try{ window.requestIdleCallback(_loadStories,{timeout:300}); }catch(e){ /* ignore */ }
   }
   setTimeout(_loadStories, 60);
-  /* Figma 兴趣偏好 2×2 网格分类（与 Figma 设置页一致） */
-  var PREFS = ['奇幻冒险', '童话寓言', '自然百科', '科幻未来', '中国神话', '历史趣事'];
-  /* 偏好 → 故事标签 映射：仅「中国神话」真正参与推荐筛选；其余 4 项维持原状，
-     避免改变现有推荐行为（零回归）。多选时取并集；单选中国神话→只推中国神话。 */
-  var PREF_TAG_MAP = { '中国神话': ['中国神话'], '历史趣事': ['历史趣事'] };
+  /* V17 兴趣偏好：仅 2 个（王尔德 / 安徒生） */
+  var PREFS = ['王尔德', '安徒生'];
+  /* 偏好 → 故事标签 映射：王尔德→王尔德童话，安徒生→安徒生童话。
+     多选取并集；任一选中即纳入对应标签故事。 */
+  var PREF_TAG_MAP = { '王尔德': ['王尔德童话'], '安徒生': ['安徒生童话'] };
 
   var FONTS    = [{ id:'sm', label:'小', px:15 }, { id:'md', label:'标准', px:17 }, { id:'lg', label:'大', px:19 }, { id:'xl', label:'特大', px:21 }];
   var AGES     = [
@@ -727,7 +728,7 @@
     var prefHtml=PREFS.map(function(p){
       var on=st.preferences.indexOf(p)>=0;
       var icon=prefIcon(p);
-      var extra = (p==='中国神话' || p==='历史趣事') ? ' wide' : '';
+      var extra = (p==='王尔德' || p==='安徒生') ? ' wide' : '';
       return '<div class="pref-card'+(on?' selected':'')+extra+'" data-pref="'+esc(p)+'">'+icon+'<span>'+esc(p)+'</span></div>';
     }).join('');
 
@@ -789,7 +790,8 @@
   function prefIcon(name){
     var map={
       '奇幻冒险':'castle','童话寓言':'bookStroke','自然百科':'leaf','科幻未来':'rocket',
-      '中国神话':'myth','历史趣事':'history'
+      '中国神话':'myth','历史趣事':'history',
+      '王尔德':'bookStroke','安徒生':'bookStroke'
     };
     return ICONS[map[name]||'bookStroke']||'';
   }

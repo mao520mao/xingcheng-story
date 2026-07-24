@@ -10,3 +10,11 @@ __pycache__/
 
 # 临时备份目录
 _removed_assets_backup_20260717/
+
+# 电子书源文件（体积大，仅本地；内容已提取进 app/js/stories_data.js）
+新故事/
+
+# 提取脚本的中间产物
+app/explore_out.txt
+app/wilde_full.txt
+
