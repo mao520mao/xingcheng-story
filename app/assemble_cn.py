@@ -21,7 +21,10 @@ for i, r in enumerate(rows, 1):
     r["ageMax"] = 13
     r.setdefault("safetyChecked", True)
     r.setdefault("summary", r["content"][:60])
-    r.setdefault("durationMin", max(2, (len(r["content"]) + 299)//300))
+    # 输出 display 层读取的 duration 字段（原错用 durationMin 导致不显示分钟）
+    _dur = max(2, (len(r["content"]) + 299)//300)
+    r["duration"] = _dur
+    r["durationMin"] = _dur
     # 统一打上「中国神话」标签（用户要求：设置偏好可筛选中国神话，单选时只推此类）
     tags = r.get("tags") or []
     if "中国神话" not in tags:
