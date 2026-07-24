@@ -1,0 +1,129 @@
+=== 顶层结构 ===
+画布数: 1
+
+📄 画布: Page 1 (0:1)  子节点数: 6
+
+=== 每个画板(Frame)详情 ===
+
+🖼 星藏阁 - 氛围增强版  [1:2]  390x1154  radius=—
+   背景色: #0b1229
+   文字(15):
+     • [28px/500 PingFang SC] #ffc68b  "星藏阁"
+     • [14px/500 PingFang SC] #dac2ae  "你的专属故事星球"
+     • [14px/500 PingFang SC] #dce1ff  "我的收藏"
+     • [14px/500 PingFang SC] #ffc68b  "历史记录"
+     • [12px/500 PingFang SC] #f0f4ff  "必读经典"
+     • [24px/500 PingFang SC] #dce1ff  "星尘之鲸"
+     • [14px/500 PingFang SC] #dac2ae  "跟随小利奥一起，骑在温柔巨兽的背上横跨银 河系..."
+     • [12px/500 PingFang SC] #ffc68b  "已读 85%"
+     • [12px/500 PingFang SC] #f0f4ff  "有声故事"
+     • [24px/500 PingFang SC] #dce1ff  "美味奇幻森林"
+     • [14px/500 PingFang SC] #dac2ae  "探索一个晚餐时间变成穿越脆嫩丛林的史诗冒 险世界..."
+     • [12px/500 PingFang SC] #ffc68b  "已读 20%"
+     • [12px/500 PingFang SC] #dac2ae  "图书馆"
+     • [12px/500 PingFang SC] #ffc68b  "星藏阁"
+     • [12px/500 PingFang SC] #dac2ae  "个人设置"
+
+🖼 设置 - 统一视觉版  [1:80]  390x1759  radius=—
+   背景色: #ffffff, #0b1229
+   文字(29):
+     • [28px/500 PingFang SC] #ffc68b  "设置"
+     • [16px/500 PingFang SC] #dac2ae  "开启您的专属奇幻阅读之旅。"
+     • [24px/500 PingFang SC] #f0f4ff  "阅读年龄"
+     • [14px/600 PingFang SC] #683c00  "8-9 岁"
+     • [14px/600 PingFang SC] #dac2ae  "10-11 岁"
+     • [14px/600 PingFang SC] #dac2ae  "12-13 岁"
+     • [24px/500 PingFang SC] #f0f4ff  "兴趣偏好"
+     • [14px/500 PingFang SC] #ffc68b  "奇幻冒险"
+     • [14px/500 PingFang SC] #dac2ae  "童话寓言"
+     • [14px/500 PingFang SC] #dac2ae  "自然百科"
+     • [14px/500 PingFang SC] #dac2ae  "科幻未来"
+     • [24px/500 PingFang SC] #f0f4ff  "朗读设置"
+     • [14px/500 PingFang SC] #f0f4ff  "解说配音"
+     • [14px/500 PingFang SC] #ffc68b  "星橙温柔男声"
+     • [12px/500 PingFang SC] #dac2ae  "朗读语速"
+     • [12px/500 PingFang SC] #dac2ae  "1.0x"
+     • [14px/500 PingFang SC] #f0f4ff  "界面显示"
+     • [16px/500 PingFang SC] #dac2ae  "阅读字体大小"
+     • [16px/500 PingFang SC] #dac2ae  "护眼模式"
+     • [16px/500 PingFang SC] #dac2ae  "自动亮度"
+     • [24px/500 PingFang SC] #f0f4ff  "存储空间"
+     • [14px/500 PingFang SC] #f0f4ff  "离线阅读缓存"
+     • [12px/500 PingFang SC] #dac2ae  "已占用 124 MB"
+     • [14px/500 PingFang SC] #ffb4ab  "清理缓存"
+     • [16px/400 WenQuanYi Zen Hei] #dac2ae  "“一切都为你准备好了，”"
+     • [16px/500 PingFang SC] #ffc68b  "做个好梦吧"
+     • [12px/500 PingFang SC] #dac2ae  "绘本馆"
+     • [12px/500 PingFang SC] #ffc68b  "星藏阁"
+     • [12px/500 PingFang SC] #ffc68b  "设置"
+
+🖼 启动欢迎页 - IP 形象修正版  [1:344]  390x884  radius=—
+   背景色: #ffffff, #030616
+   文字(3):
+     • [48px/400 PingFang SC] #fb923c  "星橙故事铺"
+     • [18px/400 PingFang SC] #ffffff  "今晚，读一颗故事星星"
+     • [12px/500 PingFang SC] #ffffff  "LOADING MAGICAL DREAMS..."
+
+🖼 Frame 1  [3:1369]  390x1210  radius=—
+   背景色: (无/透明)
+   文字(23):
+     • [16px/500 PingFang SC] #ffc68b  "换一批故事"
+     • [12px/500 PingFang SC] #4e596f  "今日推荐将在 02:45:12 后更新"
+     • [14px/500 PingFang SC] #ffc68b  "小橙子为你准备了新故事"
+     • [28px/500 PingFang SC] #f0f4ff  "今晚读哪一个？"
+     • [8px/600 PingFang SC] #ffc68b  "SWIPE"
+     • [10px/500 PingFang SC] #492900  "中国寓言"
+     • [10px/500 PingFang SC] #f0f4ff  "成长"
+     • [10px/500 PingFang SC] #f0f4ff  "奇幻"
+     • [28px/500 PingFang SC] #f0f4ff  "小王子的玫瑰"
+     • [16px/500 PingFang SC] #dac2ae  "在这颗遥远的小行星上，有一朵骄傲 却孤独的玫瑰。这是一个关于爱与责 任的成长故事，带你领略星际间的纯"
+     • [12px/500 PingFang SC] #4e596f  "流传广度"
+     • [12px/500 PingFang SC] #4e596f  "预计阅读"
+     • [16px/600 PingFang SC] #f0f4ff  "8 分钟"
+     • [18px/500 PingFang SC] #492900  "开始阅读"
+     • [12px/500 PingFang SC] #ffc68b  "正在播放..."
+     • [14px/500 PingFang SC] #f0f4ff  "星空的秘密"
+     • [12px/500 PingFang SC] #ffb86b  "图书馆"
+     • [12px/500 PingFang SC] #dac2ae  "星藏阁"
+     • [12px/500 PingFang SC] #dac2ae  "设置"
+     • [14px/500 PingFang SC] #ffffff  "9:41"
+     • [14px/400 PingFang SC] #1989fa  "返回"
+     • [14px/400 PingFang SC] #1989fa  "按钮"
+     • [16px/500 PingFang SC] #ffffff  "设备页面"
+
+🖼 朗读页 - 极致沉浸阅读版  [1:543]  390x986  radius=—
+   背景色: #ffffff, #050816
+   文字(9):
+     • [14px/500 PingFang SC] #ffffff  "9:41"
+     • [28px/500 PingFang SC] #ffc68b  "小王子的玫瑰"
+     • [10px/500 PingFang SC] #f0f4ff  "经典文学"
+     • [10px/500 PingFang SC] #ffc68b  "治愈系"
+     • [16px/500 PingFang SC] #c9b7a7  "在这个寂静的夜晚，让我们跟随小王子一起，去 寻找那朵独一无二的玫瑰，感受那份关于爱与责 任的温柔告白。"
+     • [18px/500 PingFang SC] #f5f5f5  "如果你对大人说：“我看到一幢用玫瑰色的 砖盖成的漂亮的房子，它的窗户上有天竺 葵，屋顶上还有鸽子……”他们怎么也想象不 出这种房子有多么好。"
+     • [18px/500 PingFang SC] #f5f5f5  "“你在你的星球上，在同一座花园里养了五 千朵玫瑰，”小王子说，“可是，他们却不能 从中找到自己所寻找的东西……”"
+     • [18px/500 PingFang SC] #f5f5f5  "“他们确实没找到。”我回答说。"
+     • [18px/500 PingFang SC] #f5f5f5  "“然而，他们所寻找的东西，其实只要在一 朵玫瑰花或是一点点水里就能找到。”"
+
+🖼 朗读页 - 极致沉浸阅读版  [3:1511]  390x1050  radius=—
+   背景色: #ffffff, #050816
+   文字(20):
+     • [14px/500 PingFang SC] #ffffff  "9:41"
+     • [28px/500 PingFang SC] #ffc68b  "小王子的玫瑰"
+     • [10px/500 PingFang SC] #f0f4ff  "经典文学"
+     • [10px/500 PingFang SC] #ffc68b  "治愈系"
+     • [16px/500 PingFang SC] #c9b7a7  "在这个寂静的夜晚，让我们跟随小王子一起，去 寻找那朵独一无二的玫瑰，感受那份关于爱与责 任的温柔告白。"
+     • [18px/500 PingFang SC] #f5f5f5  "如果你对大人说：“我看到一幢用玫瑰色的 砖盖成的漂亮的房子，它的窗户上有天竺 葵，屋顶上还有鸽子……”他们怎么也想象不 出这种房子有多么好。"
+     • [18px/500 PingFang SC] #f5f5f5  "“你在你的星球上，在同一座花园里养了五 千朵玫瑰，”小王子说，“可是，他们却不能 从中找到自己所寻找的东西……”"
+     • [18px/500 PingFang SC] #f5f5f5  "“他们确实没找到。”我回答说。"
+     • [18px/500 PingFang SC] #f5f5f5  "“然而，他们所寻找的东西，其实只要在一 朵玫瑰花或是一点点水里就能找到。”"
+     • [10px/400 PingFang SC] #c9b7a7  "04:12"
+     • [10px/400 PingFang SC] #c9b7a7  "12:00"
+     • [14px/600 PingFang SC] #ffc68b  "1.0x"
+     • [10px/500 PingFang SC] #c9b7a7  "语速"
+     • [10px/500 PingFang SC] #c9b7a7  "快退"
+     • [10px/500 PingFang SC] #c9b7a7  "快进"
+     • [10px/500 PingFang SC] #c9b7a7  "音色"
+     • [12px/500 PingFang SC] #683c00  "温柔妈妈音"
+     • [12px/500 PingFang SC] #c9b7a7  "温暖姐姐音"
+     • [12px/500 PingFang SC] #c9b7a7  "阳光故事音"
+     • [12px/500 PingFang SC] #c9b7a7  "深夜星光音"
