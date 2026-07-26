@@ -59,18 +59,22 @@
     try{ window.requestIdleCallback(_loadStories,{timeout:300}); }catch(e){ /* ignore */ }
   }
   setTimeout(_loadStories, 60);
-  /* V17 兴趣偏好：仅 2 个（王尔德 / 安徒生） */
-  var PREFS = ['王尔德', '安徒生'];
-  /* 偏好 → 故事标签 映射：王尔德→王尔德童话，安徒生→安徒生童话。
-     多选取并集；任一选中即纳入对应标签故事。 */
-  var PREF_TAG_MAP = { '王尔德': ['王尔德童话'], '安徒生': ['安徒生童话'] };
+  /* V18 兴趣偏好 = 书名；偏好名即故事标签，选中即开启对应书籍，支持多选。
+     偏好列表动态取自库内所有标签（按 PREFS_ORDER 排序），保证与故事 1:1 对应、永不漂移。 */
+  var PREFS_ORDER = ['安徒生','王尔德','中国童话','成语故事','格林童话（果麦版）','历史传奇','意大利童话'];
+  function getPrefList(){
+    var set={};
+    stories.forEach(function(s){(s.tags||[]).forEach(function(t){set[t]=1;});});
+    var out=[];
+    PREFS_ORDER.forEach(function(p){ if(set[p]){ out.push(p); delete set[p]; } });
+    Object.keys(set).forEach(function(p){ out.push(p); });
+    return out;
+  }
+  function prefTagMap(){
+    var m={}; getPrefList().forEach(function(p){ m[p]=[p]; }); return m;
+  }
 
   var FONTS    = [{ id:'sm', label:'小', px:15 }, { id:'md', label:'标准', px:17 }, { id:'lg', label:'大', px:19 }, { id:'xl', label:'特大', px:21 }];
-  var AGES     = [
-    { min:8, max:9,  label:'8-9 岁' },
-    { min:10,max:11,label:'10-11 岁' },
-    { min:12,max:13,label:'12-13 岁' }
-  ];
 
   /* 状态 */
   var view       = 'library';
@@ -189,19 +193,18 @@
   /* ========== 推荐算法 ========== */
   function pickBatch(){
     if(!_storiesReady || !stories.length) return [];  /* 数据未就绪，返回空数组 */
-    var st=Store.getSettings(); var age=st.age;
-    var allPool=stories.filter(function(s){ return s.ageMin<=age && s.ageMax>=age; });
-    if(!allPool.length) allPool=stories.slice();
-    // 偏好筛选：仅对 PREF_TAG_MAP 中存在的偏好生效（当前为「中国神话」）。
-    // 多选时取并集（任一选中偏好命中即入选）；单选中国神话→只推中国神话故事。
-    // 若筛选后为空（理论上不会发生，中国神话有 100+ 篇），回退为不过滤，避免首页空白。
+    var st=Store.getSettings();
+    var allPool=stories.slice();   // V18: 已删除阅读年龄筛选，全库参与推荐
+    // 偏好筛选（V18: 偏好名即标签名，选中即开启对应书籍）。
+    // 多选时取并集（任一选中偏好命中即入选）；若全部取消，则回退为不过滤，避免首页空白。
     var prefs = st.preferences || [];
-    var activePrefs = prefs.filter(function(p){ return PREF_TAG_MAP[p]; });
+    var tagMap = prefTagMap();
+    var activePrefs = prefs.filter(function(p){ return tagMap[p]; });
     if (activePrefs.length) {
       var filtered = allPool.filter(function(s){
         var tags = s.tags || [];
         return activePrefs.some(function(p){
-          return PREF_TAG_MAP[p].some(function(t){ return tags.indexOf(t) >= 0; });
+          return tagMap[p].some(function(t){ return tags.indexOf(t) >= 0; });
         });
       });
       if (filtered.length) allPool = filtered;
@@ -718,18 +721,11 @@
     view='settings';$nav.style.display='';
     var st=Store.getSettings();
 
-    // 年龄 chips
-    var ageHtml=AGES.map(function(a){
-      var sel=st.age>=a.min&&st.age<=a.max;
-      return '<button class="age-chip'+(sel?' selected':'')+'" data-a-min="'+a.min+'" data-a-max="'+a.max+'">'+a.label+'</button>';
-    }).join('');
-
-    // 偏好网格
-    var prefHtml=PREFS.map(function(p){
+    // 偏好网格（V18: 偏好=书名，动态取自库内标签，多选，选中即开启对应书籍）
+    var prefHtml=getPrefList().map(function(p){
       var on=st.preferences.indexOf(p)>=0;
       var icon=prefIcon(p);
-      var extra = (p==='王尔德' || p==='安徒生') ? ' wide' : '';
-      return '<div class="pref-card'+(on?' selected':'')+extra+'" data-pref="'+esc(p)+'">'+icon+'<span>'+esc(p)+'</span></div>';
+      return '<div class="pref-card'+(on?' selected':'')+'" data-pref="'+esc(p)+'">'+icon+'<span>'+esc(p)+'</span></div>';
     }).join('');
 
     $app.innerHTML =
@@ -739,12 +735,8 @@
           '<p class="set-head-sub">开启您的专属奇幻阅读之旅。</p>'+
         '</header>'+
 
-        /* 阅读年龄 */
-        secBox('moon','阅读年龄',
-          '<div class="age-chips">'+ageHtml+'</div>')+
-
-        /* 兴趣偏好 */
-        secBox('sparkle','兴趣偏好',
+        /* 兴趣偏好（V18: 书名即偏好，可多选） */
+        secBox('sparkle','兴趣偏好（可多选，开启对应书籍）',
           '<div class="pref-grid">'+prefHtml+'</div>')+
 
         /* 界面显示 */
@@ -789,24 +781,15 @@
 
   function prefIcon(name){
     var map={
-      '奇幻冒险':'castle','童话寓言':'bookStroke','自然百科':'leaf','科幻未来':'rocket',
-      '中国神话':'myth','历史趣事':'history',
-      '王尔德':'bookStroke','安徒生':'bookStroke'
+      '安徒生':'bookStroke','王尔德':'bookStroke',
+      '中国童话':'bookStroke','成语故事':'bookStroke','格林童话（果麦版）':'bookStroke',
+      '历史传奇':'history','意大利童话':'bookStroke'
     };
     return ICONS[map[name]||'bookStroke']||'';
   }
 
   function bindSettingsEvents(){
-    // 年龄选择
-    $$('.age-chip').forEach(function(c){
-      c.addEventListener('click',function(){
-        var min=+this.getAttribute('data-a-min');var max=+this.getAttribute('data-a-max');
-        Store.updateSettings({age:(min+max)/2});
-        $$('.age-chip').forEach(function(x){x.classList.toggle('selected',x===this);}.bind(this));
-        toast('年龄已更新');
-      });
-    });
-    // 偏好选择
+    // 偏好选择（V18: 书名即偏好，多选，选中即开启对应书籍）
     $$('.pref-card').forEach(function(c){
       c.addEventListener('click',function(){
         var p=this.getAttribute('data-pref');
