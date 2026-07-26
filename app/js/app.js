@@ -85,6 +85,8 @@
   var topIndex   = 0;           // 卡片堆叠：当前位于最前（pos 0）的故事索引
   var vaultTab   = 'fav';       // fav | history
   var playerOpen = false;       // 播放器浮层是否展开
+  var ttsController = null;     // 当前 Edge TTS 控制器（朗读页音频）
+  function stopTTS(){ if(ttsController){ try{ttsController.stop();}catch(e){} ttsController=null; } }
 
   /* 从 localStorage 持久化读取/写入「已读完」池 */
   function loadReadDonePool(){
@@ -115,6 +117,7 @@
     skipBack: '<svg class="ico-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 5.5v13L5 12l6-6.5zM19.5 5.5v13L13.5 12l6-6.5z"/></svg>',
     skipFwd:  '<svg class="ico-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 5.5v13L19 12l-6-6.5zM4.5 5.5v13L10.5 12l-6-6.5z"/></svg>',
     voice:    '<svg class="ico-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0h-2a4.5 4.5 0 0 1-9 0H5.5z"/><rect x="10.7" y="17" width="2.6" height="4" rx="1.2"/></svg>',
+    speed:    '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-3"/><path d="M9 3h6"/></svg>',
     home:     '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6"/><path d="M6 9.5V19h12V9.5"/><path d="M10 19v-5h4v5"/></svg>',
     /* 设置页分区图标（填充，跟随 .set-section-title 着色） */
     moon:     '<svg class="ico-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
@@ -493,6 +496,34 @@
     if(buf.trim())out.push(buf);return out;
   }
 
+  /* 与渲染时的 splitSentences 完全对齐，便于高亮时 data-index 对应 */
+  function buildSentenceMap(text){
+    var out=[], idx=0, buf='';
+    for(var i=0;i<text.length;i++){
+      var ch=text[i]; buf+=ch;
+      if(/[。！？；]/.test(ch)){ out.push({start:idx,end:idx+buf.length,text:buf}); idx+=buf.length; buf=''; }
+      else if(ch==='\n'){ if(buf.trim()){ out.push({start:idx,end:idx+buf.length,text:buf}); } idx+=buf.length; buf=''; }
+    }
+    if(buf.trim()){ out.push({start:idx,end:idx+buf.length,text:buf}); }
+    return out;
+  }
+
+  /* V19 Edge 神经语音：音色与语速映射（与 store 默认对齐，旧值自动回退） */
+  function edgeVoice(){
+    var v = Store.getSettings().voice;
+    if(v && /Neural/.test(v)) return v;
+    return 'zh-CN-XiaoxiaoNeural';
+  }
+  function speedKey(){
+    var sp = Store.getSettings().speed;
+    if(sp==='slow'||sp==='fast') return sp;
+    return 'normal';
+  }
+  function edgeRate(){
+    var k = speedKey();
+    return k==='slow' ? '-18%' : k==='fast' ? '+12%' : '-10%';
+  }
+
   function openReading(id){
     var s=find(id);if(!s)return;
     storyId=id; view='reading'; $nav.style.display='none';
@@ -515,6 +546,28 @@
     var prog=Store.getProgress(id);
     var fontId=st.fontSize;
     var fCls='fs-'+(fontId==='small'?'sm':fontId==='standard'?'md':fontId==='large'?'lg':fontId==='xlarge'?'xl':fontId||'md');
+
+    /* V19 朗读页播放器（Edge 免费神经语音） */
+    var pvVoice = edgeVoice();
+    var pvSpeed = speedKey();
+    var pvPills = (window.EdgeTTS?EdgeTTS.VOICES:[{id:pvVoice,name:'晓晓（温柔女声·推荐）'}]).map(function(v){
+      return '<button class="vpill'+(v.id===pvVoice?' active':'')+'" data-voice="'+v.id+'">'+esc(v.name)+'</button>';
+    }).join('');
+    var playerHtml =
+      '<div class="player-overlay" id="playerOverlay">'+
+        '<div class="player-prog">'+
+          '<div class="prog-times"><span id="progCur">00:00</span><span id="progState" class="prog-state">轻触播放，星橙开始讲故事</span><span id="progTot">--:--</span></div>'+
+          '<div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>'+
+        '</div>'+
+        '<div class="pctrl-row">'+
+          '<div class="pctrl-item" id="rateBtn"><div class="pctrl-icon">'+ICONS.speed+'</div><div class="pctrl-label" id="rateLabel">语速·'+(pvSpeed==='slow'?'慢':pvSpeed==='fast'?'快':'常')+'</div></div>'+
+          '<div class="pctrl-item" id="skipBackBtn"><div class="pctrl-icon">'+ICONS.skipBack+'</div><div class="pctrl-label">快退</div></div>'+
+          '<button class="pctrl-play-big" id="playBtn">'+ICONS.play+'</button>'+
+          '<div class="pctrl-item" id="skipFwdBtn"><div class="pctrl-icon">'+ICONS.skipFwd+'</div><div class="pctrl-label">快进</div></div>'+
+          '<div class="pctrl-item" id="voiceBtn"><div class="pctrl-icon">'+ICONS.voice+'</div><div class="pctrl-label">音色</div></div>'+
+        '</div>'+
+        '<div class="voice-pills" id="voicePills">'+pvPills+'</div>'+
+      '</div>';
 
     $app.innerHTML =
       '<div class="reader">'+
@@ -542,9 +595,12 @@
               '<button class="reader-fav-btn" id="readerFavBtn">'+(fav?'★ 已藏进星星里 ✦':'☆ 藏进星星里')+'</button>'+
             '</div>'+
           '</main>'+
-        '</div>';
+        '</div>'+
+        playerHtml+
+      '</div>';
 
     bindReaderEvents(id);
+    bindPlayerEvents(id);
 
     /* 进入即阅读模式：显式保证标题为柔白（无选中色），不依赖任何状态回调时序，杜绝上一则后台朗读泄漏导致的“一进去就橙” */
     setReaderTitlePlaying(false);
@@ -594,7 +650,7 @@
     });
   }
 
-  /* 标题颜色随阅读高亮（已移除语音朗读，仅保留标题柔白态） */
+  /* 标题颜色随朗读高亮（V19：进入朗读页默认柔白，开始语音播放时转暖橙） */
   function setReaderTitlePlaying(on){
     var t=$('.reader-title'); if(t) t.classList.toggle('is-playing', !!on);
   }
@@ -607,8 +663,98 @@
     btn.classList.toggle('favorited', on);
   }
 
+  /* 朗读页播放器（V19 Edge 免费神经语音）接线：播放/暂停、快退/快进、语速、音色、句高亮 */
+  function bindPlayerEvents(id){
+    var s=find(id); if(!s) return;
+    var content=s.content||'';
+    var sentMap=buildSentenceMap(content);
+    var contentLen=content.length;
+    var curVoice=edgeVoice();
+    var curRate=edgeRate();
+    var startOffset=0, lastPos=0;
+
+    var playBtn=$('#playBtn'), progFill=$('#progFill'),
+        progCur=$('#progCur'), progTot=$('#progTot'), progState=$('#progState');
+    var titleEl=$('.reader-title');
+
+    function setPlayIcon(playing){ if(playBtn) playBtn.innerHTML = playing ? ICONS.pause : ICONS.play; }
+    function fmt(t){ t=Math.max(0,t||0); var m=Math.floor(t/60), sec=Math.floor(t%60);
+      return (m<10?'0':'')+m+':'+(sec<10?'0':'')+sec; }
+    function sentenceIndexAt(pos){
+      for(var i=0;i<sentMap.length;i++){ if(pos>=sentMap[i].start && pos<sentMap[i].end) return i; }
+      if(pos>=contentLen && sentMap.length) return sentMap.length-1;
+      return -1;
+    }
+    function highlight(si){ $$('.reading-body .sentence').forEach(function(sp){
+      sp.classList.toggle('active', +sp.getAttribute('data-index')===si); }); }
+
+    function startFrom(offset){
+      if(!window.EdgeTTS){ if(progState) progState.textContent='当前环境暂不支持语音'; return; }
+      stopTTS();
+      startOffset=offset; lastPos=offset;
+      var text = offset>0 ? content.slice(offset) : content;
+      var estTotal = Math.max(1, text.length/4.5);
+      if(progTot) progTot.textContent=fmt(estTotal);
+      setPlayIcon(true);
+      if(progState) progState.textContent='连接中…';
+      setReaderTitlePlaying(true);
+      ttsController = EdgeTTS.speak({
+        text:text, voice:curVoice, rate:curRate,
+        onState:function(st, info){
+          if(st==='connecting'){ if(progState) progState.textContent='连接中…'; }
+          else if(st==='playing'){ setPlayIcon(true); if(progState) progState.textContent='星橙正在讲故事'; }
+          else if(st==='paused'){ setPlayIcon(false); if(progState) progState.textContent='已暂停'; }
+          else if(st==='ended'){ setPlayIcon(false); if(progState) progState.textContent='故事讲完啦 ✦'; setReaderTitlePlaying(false); markReadDone(id); ttsController=null; }
+          else if(st==='stopped'){ setPlayIcon(false); setReaderTitlePlaying(false); ttsController=null; }
+          else if(st==='error'){ setPlayIcon(false); if(progState) progState.textContent='出错了：'+(info||'请检查网络'); setReaderTitlePlaying(false); ttsController=null; }
+        },
+        onProgress:function(cur,total){
+          var frac = total ? (cur/total) : 0;
+          var remaining = contentLen - startOffset;
+          var pos = startOffset + frac*remaining;
+          lastPos = pos;
+          var gf = contentLen ? (pos/contentLen)*100 : 0;
+          if(progFill) progFill.style.width = Math.min(100,gf)+'%';
+          if(progCur) progCur.textContent = fmt(cur);
+          highlight(sentenceIndexAt(pos));
+        }
+      });
+    }
+
+    if(playBtn) playBtn.addEventListener('click',function(){
+      if(ttsController && ttsController.state==='playing'){ ttsController.pause(); }
+      else if(ttsController && ttsController.state==='paused'){ ttsController.resume(); }
+      else { startFrom(0); }
+    });
+    var sb=$('#skipBackBtn'); if(sb) sb.addEventListener('click',function(){
+      var si=sentenceIndexAt(lastPos);
+      startFrom(si>0 ? sentMap[si-1].start : 0);
+    });
+    var sf=$('#skipFwdBtn'); if(sf) sf.addEventListener('click',function(){
+      var si=sentenceIndexAt(lastPos);
+      startFrom((si>=0 && si<sentMap.length-1) ? sentMap[si+1].start : contentLen);
+    });
+    var rb=$('#rateBtn'); if(rb) rb.addEventListener('click',function(){
+      var rates=[{k:'slow',r:'-18%',l:'慢'},{k:'normal',r:'-10%',l:'常'},{k:'fast',r:'+12%',l:'快'}];
+      var idx=0; for(var i=0;i<rates.length;i++){ if(rates[i].r===curRate){ idx=i; break; } }
+      idx=(idx+1)%rates.length; curRate=rates[idx].r;
+      var lbl=$('#rateLabel'); if(lbl) lbl.textContent='语速·'+rates[idx].l;
+      Store.updateSettings({speed:rates[idx].k});
+      if(ttsController) startFrom(startOffset);
+    });
+    $$('#voicePills .vpill').forEach(function(p){
+      p.addEventListener('click',function(){
+        curVoice=p.getAttribute('data-voice');
+        $$('#voicePills .vpill').forEach(function(x){ x.classList.toggle('active', x===p); });
+        Store.updateSettings({voice:curVoice});
+        if(ttsController) startFrom(startOffset);
+      });
+    });
+  }
+
   /* 从朗读页返回图书馆 */
   function goBackFromReader(){
+    stopTTS();
     view='library';$nav.style.display='';batch=pickBatch();topIndex=0;
     renderLibrary();
   }
@@ -745,6 +891,17 @@
             '<input type="range" id="setBrightBar" min="0.3" max="1.2" step="0.05" value="'+st.brightness+'"/>'+
             '<span class="slider-val" id="setBrightVal">'+Math.round(st.brightness*100)+'%</span></div>')+
 
+        /* 朗读设置（V19: Edge 免费神经语音） */
+        secBox('voice','朗读设置',
+          '<div class="set-row-block"><div class="set-row-label-row"><span class="set-row-label">朗读音色</span><span class="set-row-hint">免费·自然·需联网</span></div>'+
+            '<div class="voice-pills" id="setVoicePills">'+settingsVoicePills()+'</div></div>'+
+          '<div class="set-row-block"><div class="set-row-label-row"><span class="set-row-label">朗读语速</span></div>'+
+            '<div class="seg-group" id="setSpeedSeg">'+
+              '<button class="seg-btn" data-speed="slow">慢</button>'+
+              '<button class="seg-btn" data-speed="normal">常</button>'+
+              '<button class="seg-btn" data-speed="fast">快</button>'+
+            '</div></div>')+
+
         /* 存储空间 */
         secBox('storage','存储空间',
           '<div class="storage-row">'+
@@ -788,6 +945,15 @@
     return ICONS[map[name]||'bookStroke']||'';
   }
 
+  /* 设置页朗读音色 pills（取自 EdgeTTS.VOICES，当前音色高亮） */
+  function settingsVoicePills(){
+    var cur=edgeVoice();
+    var list=window.EdgeTTS?EdgeTTS.VOICES:[{id:cur,name:'晓晓（温柔女声·推荐）'}];
+    return list.map(function(v){
+      return '<button class="vpill'+(v.id===cur?' active':'')+'" data-voice="'+v.id+'">'+esc(v.name)+'</button>';
+    }).join('');
+  }
+
   function bindSettingsEvents(){
     // 偏好选择（V18: 书名即偏好，多选，选中即开启对应书籍）
     $$('.pref-card').forEach(function(c){
@@ -809,6 +975,23 @@
       if(confirm('确定清理缓存吗？已收藏的故事会保留。')){
         Store.clearCache();toast('缓存已清理 ✦');
       }
+    });
+    // V19 朗读音色
+    $$('#setVoicePills .vpill').forEach(function(p){
+      p.addEventListener('click',function(){
+        Store.updateSettings({voice:p.getAttribute('data-voice')});
+        $$('#setVoicePills .vpill').forEach(function(x){ x.classList.toggle('active', x===p); });
+      });
+    });
+    // V19 朗读语速
+    var sk=speedKey();
+    $$('#setSpeedSeg .seg-btn').forEach(function(b){
+      var on=(b.getAttribute('data-speed')===sk);
+      b.classList.toggle('active', on);
+      b.addEventListener('click',function(){
+        Store.updateSettings({speed:b.getAttribute('data-speed')});
+        $$('#setSpeedSeg .seg-btn').forEach(function(x){ x.classList.toggle('active', x===b); });
+      });
     });
   }
 
@@ -834,7 +1017,7 @@
     $$('#bottomNav .nav-tab').forEach(function(item){
       item.addEventListener('click',function(){
         var tgt=item.getAttribute('data-view');
-        if(view==='reading'){$nav.style.display='';}
+        if(view==='reading'){ stopTTS(); $nav.style.display=''; }
         setNavActive(tgt);
         if(tgt==='library'){batch=pickBatch();topIndex=0;renderLibrary();}
         else if(tgt==='vault'){renderVault();}
