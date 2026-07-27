@@ -699,7 +699,7 @@
       if(progState) progState.textContent='连接中…';
       setReaderTitlePlaying(true);
       ttsController = EdgeTTS.speak({
-        text:text, voice:curVoice, rate:curRate,
+        text:text, voice:curVoice, rate:curRate, relay: Store.getSettings().ttsRelay || '',
         onState:function(st, info){
           if(st==='connecting'){ if(progState) progState.textContent='连接中…'; }
           else if(st==='playing'){ setPlayIcon(true); if(progState) progState.textContent='星橙正在讲故事'; }
@@ -891,7 +891,7 @@
             '<input type="range" id="setBrightBar" min="0.3" max="1.2" step="0.05" value="'+st.brightness+'"/>'+
             '<span class="slider-val" id="setBrightVal">'+Math.round(st.brightness*100)+'%</span></div>')+
 
-        /* 朗读设置（V19: Edge 免费神经语音） */
+        /* 朗读设置（V19: Edge 免费神经语音；V21: 支持中转地址） */
         secBox('voice','朗读设置',
           '<div class="set-row-block"><div class="set-row-label-row"><span class="set-row-label">朗读音色</span><span class="set-row-hint">免费·自然·需联网</span></div>'+
             '<div class="voice-pills" id="setVoicePills">'+settingsVoicePills()+'</div></div>'+
@@ -900,7 +900,10 @@
               '<button class="seg-btn" data-speed="slow">慢</button>'+
               '<button class="seg-btn" data-speed="normal">常</button>'+
               '<button class="seg-btn" data-speed="fast">快</button>'+
-            '</div></div>')+
+            '</div></div>'+
+          '<div class="set-row-block"><div class="set-row-label-row"><span class="set-row-label">中转地址</span><span class="set-row-hint">国内网络填此可稳定</span></div>'+
+            '<input type="url" id="setRelayInput" class="set-input" placeholder="wss://你的中转.workers.dev" value="'+esc(st.ttsRelay||'')+'"/>'+
+            '<p class="set-row-tip">留空＝直连微软（国内常失败）。部署免费 Cloudflare Worker 中转后，在此填入其 <b>wss://</b> 地址即可稳定朗读。</p></div>')+
 
         /* 存储空间 */
         secBox('storage','存储空间',
@@ -992,6 +995,12 @@
         Store.updateSettings({speed:b.getAttribute('data-speed')});
         $$('#setSpeedSeg .seg-btn').forEach(function(x){ x.classList.toggle('active', x===b); });
       });
+    });
+    // V21 朗读中转地址
+    var ri=$('#setRelayInput');
+    if(ri) ri.addEventListener('change',function(){
+      Store.updateSettings({ttsRelay:this.value.trim()});
+      toast('中转地址已保存');
     });
   }
 

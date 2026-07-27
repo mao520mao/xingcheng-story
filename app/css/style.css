@@ -678,6 +678,16 @@ input[type='range']::-moz-range-thumb {
   cursor: pointer; transition: all .15s ease;
 }
 .seg-btn.active { color: var(--chip-dark); background: var(--cta-gradient); border-color: transparent; box-shadow: var(--glow-orange); }
+.set-input {
+  width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: var(--r-md);
+  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04);
+  color: var(--text-bright); font-size: 13px; font-family: var(--font); outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.set-input::placeholder { color: var(--text-dim); }
+.set-input:focus { border-color: var(--orange-warm); box-shadow: 0 0 0 3px rgba(255,159,28,.16); }
+.set-row-tip { margin: 7px 0 0; font-size: 11px; line-height: 1.5; color: var(--text-dim); }
+.set-row-tip b { color: var(--orange-warm); }
 .prog-state { color: var(--text-dim); }
 .player-overlay .voice-pills { margin-top: 2px; }
 

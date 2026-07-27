@@ -1,8 +1,15 @@
 /*
- * tts_edge.js — 浏览器端微软 Edge 免费神经语音客户端（星橙故事铺 V19）
- * 无需 API key、无需服务器、无需任何自定义请求头（实测微软不校验 Origin/MUID）。
- * 仅在 WebView 内通过 WebSocket 直连 speech.platform.bing.com，需手机联网。
- * 因 WebView 处于 file:// 非安全上下文，window.crypto.subtle 不可用，故内置同步 SHA256。
+ * tts_edge.js — 浏览器端微软 Edge 免费神经语音客户端（星橙故事铺 V19+）
+ *
+ * 两种连接模式：
+ *  1) 直连（opts.relay 不传）：WebSocket 直连 speech.platform.bing.com。
+ *     ⚠️ 浏览器/WebView 无法在 WS 握手时自定义请求头，而微软现在要求带 Edg UA + Cookie muid，
+ *        故直连在真机 WebView 上基本不可用（仅桌面测试用）。
+ *  2) 中转（opts.relay 传 wss:// 地址）：连到自建 Cloudflare Worker 等中转服务，
+ *        由中转服务端带上全部必需请求头去连微软，再把音频流式转发回来。
+ *        这是真机（尤其国内网络）唯一稳定可用的方式。
+ *
+ * 因 WebView 处于 file:// 非安全上下文，window.crypto.subtle 不可用，故内置同步 SHA256（直连模式用）。
  */
 (function (global) {
   'use strict';
@@ -122,6 +129,7 @@
    *     text: string,
    *     voice: string (默认 zh-CN-XiaoxiaoNeural),
    *     rate: string (如 '-10%' / '0%' / '10%'),
+   *     relay: string (可选；wss:// 中转地址。传了则走中转，无需 GEC/自定义头，真机唯一稳定方案),
    *     audio: optional <audio> 元素（不传则内部创建隐藏元素）,
    *     onState: function(state, info)  state: 'connecting'|'playing'|'paused'|'ended'|'error',
    *     onProgress: function(currentSec, totalSec),
@@ -149,13 +157,21 @@
     // 估算总时长：中文约 4.5 字/秒（rate -10% 略慢），用于进度条与高亮映射
     var estTotal = Math.max(1, text.length / 4.5);
 
-    var token = genToken();
+    var relay = opts.relay || '';
     var connId = (function () { var s = ''; for (var i = 0; i < 16; i++) s += Math.floor(Math.random() * 16).toString(16); return s; })();
-    var wsUrl = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
-      + '?TrustedClientToken=' + TRUSTED
-      + '&ConnectionId=' + connId
-      + '&Sec-MS-GEC=' + token
-      + '&Sec-MS-GEC-Version=' + GEC_VER;
+    var wsUrl;
+    if (relay) {
+      // 中转模式：GEC 令牌与全部必需请求头由中转服务端处理，客户端只发 SSML
+      wsUrl = relay;
+    } else {
+      // 直连模式（仅桌面测试用；真机 WebView 因无法自定义握手头通常失败）
+      var token = genToken();
+      wsUrl = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
+        + '?TrustedClientToken=' + TRUSTED
+        + '&ConnectionId=' + connId
+        + '&Sec-MS-GEC=' + token
+        + '&Sec-MS-GEC-Version=' + GEC_VER;
+    }
 
     var ws = null, sb = null, ms = null, audioQueue = [], sentIdx = 0, allSent = false, finalized = false, started = false;
     var sbReady = false, wsReady = false;
@@ -264,7 +280,13 @@
         else { allSent = true; if (!audioQueue.length) finalize(); }
       }
     });
-    ws.addEventListener('error', function (e) { onState('error', '网络错误或微软接口不可达（请检查联网）' + (e && e.message ? '：' + e.message : '')); });
+    ws.addEventListener('error', function (e) {
+      var msg = relay
+        ? '中转连接失败（请检查中转地址是否正确、手机是否联网）'
+        : '直连微软失败：国内网络通常连不上，请在「设置 → 朗读设置」填入中转地址后重试';
+      if (e && e.message) msg += '：' + e.message;
+      onState('error', msg);
+    });
     ws.addEventListener('close', function () { if (allSent && !audioQueue.length) finalize(); });
 
     // 缓冲排空后收尾

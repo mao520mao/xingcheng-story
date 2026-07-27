@@ -16,7 +16,8 @@
     fontSize: 'md', // 阅读字号：sm / md / lg / xl（默认标准，设置页不再提供调节）
     lineHeight: 'comfort', // 行距：compact / comfort / loose
     brightness: 1.0, // 页面亮度 0-1（默认全亮，用户可在设置里调暗）
-    autoDownload: true // 自动下载开关
+    autoDownload: true, // 自动下载开关
+    ttsRelay: '' // V21: Edge TTS 中转地址（wss://...）。国内网络直连微软常失败，填此地址即可稳定朗读
   };
 
   var DEFAULT_STATE = {
