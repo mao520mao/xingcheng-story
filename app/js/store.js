@@ -11,13 +11,12 @@
   var DEFAULT_SETTINGS = {
     // V18: 已删除「阅读年龄」。偏好 = 书名，选中即开启对应书籍，支持多选，默认全开。
     preferences: ['安徒生','王尔德','中国童话','成语故事','格林童话（果麦版）','历史传奇','意大利童话'],
-    voice: 'zh-CN-XiaoxiaoNeural', // V19: Edge 免费神经语音音色 id（晓晓·温柔女声·推荐）
-    speed: 'normal', // V19: 朗读语速：slow(慢 -18%) / normal(常 -10%) / fast(快 +12%)
+    voice: 'mom', // 朗读音色：mom / sister / story / night
+    speed: 1.0, // 朗读语速：0.8 / 1.0 / 1.2
     fontSize: 'md', // 阅读字号：sm / md / lg / xl（默认标准，设置页不再提供调节）
     lineHeight: 'comfort', // 行距：compact / comfort / loose
     brightness: 1.0, // 页面亮度 0-1（默认全亮，用户可在设置里调暗）
-    autoDownload: true, // 自动下载开关
-    ttsRelay: 'wss://xingcheng-tts.m476504127.workers.dev' // V21: Edge TTS 中转地址（wss://...）。已内置默认中转，国内网络直连微软常失败，留空即用内置中转
+    autoDownload: true // 自动下载开关
   };
 
   var DEFAULT_STATE = {

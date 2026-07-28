@@ -398,7 +398,7 @@ body.reader-open .star-field { opacity: 0 !important; transition: opacity .45s e
 .reader-tag.orange { background: rgba(255,198,139,.18); color: var(--orange-warm); }
 
 /* 正文滚动区（min-height:0 是 flex 列内可滚动的关键，否则内容会被裁剪无法下拉到底） */
-.reader-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; padding-bottom: 220px; -webkit-overflow-scrolling: touch; }
+.reader-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; padding-bottom: 84px; -webkit-overflow-scrolling: touch; }
 .reader-scroll::-webkit-scrollbar { width: 4px; }
 .reader-scroll::-webkit-scrollbar-thumb { background: rgba(255,198,139,.22); border-radius: 4px; }
 
@@ -664,32 +664,6 @@ input[type='range']::-moz-range-thumb {
 .slider-group label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .slider-group input[type='range'] { flex: 1; }
 .slider-val { font-size: 12px; color: var(--orange-warm); font-weight: 700; min-width: 32px; text-align: right; }
-
-/* V19 朗读设置（Edge 免费神经语音） */
-.set-row-block { margin-bottom: 16px; }
-.set-row-block:last-child { margin-bottom: 0; }
-.set-row-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.set-row-hint { font-size: 11px; color: var(--text-dim); }
-.seg-group { display: flex; gap: 8px; }
-.seg-btn {
-  flex: 1; padding: 10px 0; border-radius: var(--r-md);
-  border: 1px solid rgba(255,255,255,.10); background: transparent;
-  color: var(--text-dim); font-size: 14px; font-weight: 600; font-family: var(--font);
-  cursor: pointer; transition: all .15s ease;
-}
-.seg-btn.active { color: var(--chip-dark); background: var(--cta-gradient); border-color: transparent; box-shadow: var(--glow-orange); }
-.set-input {
-  width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: var(--r-md);
-  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04);
-  color: var(--text-bright); font-size: 13px; font-family: var(--font); outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-.set-input::placeholder { color: var(--text-dim); }
-.set-input:focus { border-color: var(--orange-warm); box-shadow: 0 0 0 3px rgba(255,159,28,.16); }
-.set-row-tip { margin: 7px 0 0; font-size: 11px; line-height: 1.5; color: var(--text-dim); }
-.set-row-tip b { color: var(--orange-warm); }
-.prog-state { color: var(--text-dim); }
-.player-overlay .voice-pills { margin-top: 2px; }
 
 /* 开关控件 */
 .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
