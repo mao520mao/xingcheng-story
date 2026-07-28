@@ -61,7 +61,7 @@
   setTimeout(_loadStories, 60);
   /* V18 兴趣偏好 = 书名；偏好名即故事标签，选中即开启对应书籍，支持多选。
      偏好列表动态取自库内所有标签（按 PREFS_ORDER 排序），保证与故事 1:1 对应、永不漂移。 */
-  var PREFS_ORDER = ['安徒生','王尔德','中国童话','成语故事','格林童话（果麦版）','历史传奇','意大利童话'];
+  var PREFS_ORDER = ['安徒生','王尔德','中国童话','365夜故事','成语故事','格林童话（果麦版）','历史传奇','意大利童话'];
   function getPrefList(){
     var set={};
     stories.forEach(function(s){(s.tags||[]).forEach(function(t){set[t]=1;});});
@@ -782,7 +782,7 @@
   function prefIcon(name){
     var map={
       '安徒生':'bookStroke','王尔德':'bookStroke',
-      '中国童话':'bookStroke','成语故事':'bookStroke','格林童话（果麦版）':'bookStroke',
+      '中国童话':'bookStroke','365夜故事':'bookStroke','成语故事':'bookStroke','格林童话（果麦版）':'bookStroke',
       '历史传奇':'history','意大利童话':'bookStroke'
     };
     return ICONS[map[name]||'bookStroke']||'';
@@ -804,10 +804,13 @@
       Store.updateSettings({brightness:v});
       applyBrightness();
     });
-    // 清理缓存
+    // 清理缓存：清进度/历史，并同时重置「已读完」池，让已读完的故事重新进入每日推荐
     $('#clearCacheBtn').addEventListener('click',function(){
-      if(confirm('确定清理缓存吗？已收藏的故事会保留。')){
-        Store.clearCache();toast('缓存已清理 ✦');
+      if(confirm('确定清理缓存吗？已收藏的故事会保留,已读完的推荐会重置(可重新出现在首页)。')){
+        Store.clearCache();
+        readDonePool = {};                       // 内存中的已读完池置空
+        try { localStorage.removeItem('xch_readdone'); } catch(e){} // 清掉持久化的排除集
+        toast('缓存已清理,已读完的故事将重新推荐 ✦');
       }
     });
   }
