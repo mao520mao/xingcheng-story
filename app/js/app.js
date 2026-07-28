@@ -699,7 +699,7 @@
       if(progState) progState.textContent='连接中…';
       setReaderTitlePlaying(true);
       ttsController = EdgeTTS.speak({
-        text:text, voice:curVoice, rate:curRate, relay: Store.getSettings().ttsRelay || '',
+        text:text, voice:curVoice, rate:curRate, relay: Store.getSettings().ttsRelay || (window.EdgeTTS && EdgeTTS.DEFAULT_RELAY) || '',
         onState:function(st, info){
           if(st==='connecting'){ if(progState) progState.textContent='连接中…'; }
           else if(st==='playing'){ setPlayIcon(true); if(progState) progState.textContent='星橙正在讲故事'; }
@@ -901,9 +901,9 @@
               '<button class="seg-btn" data-speed="normal">常</button>'+
               '<button class="seg-btn" data-speed="fast">快</button>'+
             '</div></div>'+
-          '<div class="set-row-block"><div class="set-row-label-row"><span class="set-row-label">中转地址</span><span class="set-row-hint">国内网络填此可稳定</span></div>'+
-            '<input type="url" id="setRelayInput" class="set-input" placeholder="wss://你的中转.workers.dev" value="'+esc(st.ttsRelay||'')+'"/>'+
-            '<p class="set-row-tip">留空＝直连微软（国内常失败）。部署免费 Cloudflare Worker 中转后，在此填入其 <b>wss://</b> 地址即可稳定朗读。</p></div>')+
+          '<div class="set-row-block"><div class="set-row-label-row"><span class="set-row-label">中转地址</span><span class="set-row-hint">已内置默认中转，可留空</span></div>'+
+            '<input type="text" id="setRelayInput" class="set-input" placeholder="wss://你的中转.workers.dev" value="'+esc(st.ttsRelay || (window.EdgeTTS && EdgeTTS.DEFAULT_RELAY) || '')+'"/>'+
+            '<p class="set-row-tip">国内网络直连微软常失败。已默认内置中转 <b>wss://xingcheng-tts.m476504127.workers.dev</b>，留空即用、开箱朗读。如需更换可填自己的 <b>wss://</b> 中转地址。</p></div>')+
 
         /* 存储空间 */
         secBox('storage','存储空间',

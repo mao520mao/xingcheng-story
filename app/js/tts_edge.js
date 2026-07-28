@@ -76,6 +76,10 @@
   var WIN_EPOCH = 11644473600; // 1601-01-01 与 1970-01-01 的秒差
   var OUTPUT_FORMAT = 'audio-24khz-48kbitrate-mono-mp3';
 
+  // V21+：内置默认中转地址（用户自建 Cloudflare Worker）。国内网络直连微软普遍失败，
+  // 故当用户未在「设置」里填写自定义中转时，自动回退到此地址，确保开箱即用。
+  var DEFAULT_RELAY = 'wss://xingcheng-tts.m476504127.workers.dev';
+
   function genToken() {
     var ticks = Date.now() / 1000 + WIN_EPOCH;
     ticks -= ticks % 300;           // 向下取整到 5 分钟
@@ -157,7 +161,7 @@
     // 估算总时长：中文约 4.5 字/秒（rate -10% 略慢），用于进度条与高亮映射
     var estTotal = Math.max(1, text.length / 4.5);
 
-    var relay = opts.relay || '';
+    var relay = opts.relay || DEFAULT_RELAY;
     var connId = (function () { var s = ''; for (var i = 0; i < 16; i++) s += Math.floor(Math.random() * 16).toString(16); return s; })();
     var wsUrl;
     if (relay) {
@@ -310,5 +314,5 @@
     return controller;
   }
 
-  global.EdgeTTS = { speak: speak, VOICES: VOICES, sha256: sha256 };
+  global.EdgeTTS = { speak: speak, VOICES: VOICES, sha256: sha256, DEFAULT_RELAY: DEFAULT_RELAY };
 })(typeof window !== 'undefined' ? window : this);

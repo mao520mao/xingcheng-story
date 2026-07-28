@@ -17,7 +17,7 @@
     lineHeight: 'comfort', // 行距：compact / comfort / loose
     brightness: 1.0, // 页面亮度 0-1（默认全亮，用户可在设置里调暗）
     autoDownload: true, // 自动下载开关
-    ttsRelay: '' // V21: Edge TTS 中转地址（wss://...）。国内网络直连微软常失败，填此地址即可稳定朗读
+    ttsRelay: 'wss://xingcheng-tts.m476504127.workers.dev' // V21: Edge TTS 中转地址（wss://...）。已内置默认中转，国内网络直连微软常失败，留空即用内置中转
   };
 
   var DEFAULT_STATE = {
