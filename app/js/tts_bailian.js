@@ -20,7 +20,7 @@
       xhr.open('POST', API_URL, true);
       xhr.setRequestHeader('Authorization', 'Bearer ' + API_KEY);
       xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.timeout = 30000; // 30s 超时
+      xhr.timeout = 60000; // 60s 超时（移动网络可能较慢）
 
       xhr.onload = function () {
         try {
@@ -31,15 +31,16 @@
               characters: (resp.usage && resp.usage.characters) || text.length
             });
           } else {
-            reject(new Error(resp.message || '合成失败 (HTTP ' + xhr.status + ')'));
+            var msg = resp.message || resp.code || '';
+            reject(new Error('合成失败 HTTP' + xhr.status + (msg ? ': ' + msg : '')));
           }
         } catch (e) {
-          reject(new Error('解析响应失败: ' + e.message));
+          reject(new Error('解析响应失败 HTTP' + xhr.status));
         }
       };
 
       xhr.onerror = function () {
-        reject(new Error('网络请求失败'));
+        reject(new Error('网络错误(可能被拦截,状态码' + (xhr.status || '0') + ')'));
       };
 
       xhr.ontimeout = function () {
