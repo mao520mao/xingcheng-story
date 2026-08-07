@@ -86,6 +86,15 @@
   var vaultTab   = 'fav';       // fav | history
   var playerOpen = false;       // 播放器浮层是否展开
 
+  /* ---------- 播放器状态 ---------- */
+  var playerState = null;       // { open, loading, playing, audio, audioUrls, currentChunk }
+  var playerTimer = null;       // 进度更新定时器
+
+  function resetPlayerState() {
+    playerState = { open: false, loading: false, playing: false, audio: null, audioUrls: [], currentChunk: 0 };
+  }
+  resetPlayerState();
+
   /* 从 localStorage 持久化读取/写入「已读完」池 */
   function loadReadDonePool(){
     try{ var raw=localStorage.getItem('xch_readdone'); return raw?JSON.parse(raw):{}; }catch(e){return {};}
@@ -542,7 +551,24 @@
               '<button class="reader-fav-btn" id="readerFavBtn">'+(fav?'★ 已藏进星星里 ✦':'☆ 藏进星星里')+'</button>'+
             '</div>'+
           '</main>'+
-        '</div>';
+        '</div>'+
+        /* 浮动朗读按钮 */
+        '<button class="floating-play" id="floatPlay" aria-label="朗读故事">'+
+          '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6L19 12 8 5.2z"/></svg>'+
+        '</button>'+
+        /* 播放器浮层（默认隐藏） */
+        '<div class="player-overlay" id="playerOverlay" style="display:none">'+
+          '<div class="player-prog">'+
+            '<div class="prog-times"><span id="curTime">00:00</span><span id="totalTime">00:00</span></div>'+
+            '<div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>'+
+          '</div>'+
+          '<div class="pctrl-row">'+
+            '<button class="pctrl-play-big" id="playerPlayBtn" aria-label="播放/暂停">'+
+              ICONS.play+
+            '</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
 
     bindReaderEvents(id);
 
@@ -592,6 +618,33 @@
       updateReaderFavBtn(id);
       toast(on?'已藏进星星里 ✦':'已取消收藏');
     });
+
+    /* 朗读按钮 */
+    var fp = $('#floatPlay');
+    if (fp) {
+      fp.addEventListener('click', function () {
+        if (playerState.loading) return;
+        if (playerState.open) {
+          // 已展开播放器 → 切换播放/暂停
+          togglePlayPause();
+          return;
+        }
+        // 首次朗读 → 合成语音
+        var s = find(id);
+        if (!s || !s.content) { toast('故事内容为空'); return; }
+        // 去掉纯空白行，拼接为纯文本
+        var text = s.content.split('\n').filter(function (p) { return p.trim(); }).join('\n');
+        initPlayer(text);
+      });
+    }
+
+    /* 播放器播放/暂停按钮 */
+    var ppb = $('#playerPlayBtn');
+    if (ppb) {
+      ppb.addEventListener('click', function () {
+        togglePlayPause();
+      });
+    }
   }
 
   /* 标题颜色随阅读高亮（已移除语音朗读，仅保留标题柔白态） */
@@ -609,8 +662,205 @@
 
   /* 从朗读页返回图书馆 */
   function goBackFromReader(){
+    stopPlayer();
     view='library';$nav.style.display='';batch=pickBatch();topIndex=0;
     renderLibrary();
+  }
+
+  /* ================================================
+   百炼 TTS 播放器
+   ================================================ */
+  function initPlayer(storyText) {
+    stopPlayer();
+    playerState.loading = true;
+    updateFloatPlayBtn();
+
+    BailianTTS.synthesize(storyText, {
+      voice: (Store.getSettings().voice === 'mom' ? 'Serena' :
+              Store.getSettings().voice === 'sister' ? 'Maia' :
+              Store.getSettings().voice === 'story' ? 'Katerina' :
+              Store.getSettings().voice === 'night' ? 'Seren' : 'Serena'),
+      onProgress: function (i, total) {
+        // 保持 loading 态
+      }
+    }).then(function (audioUrls) {
+      if (view !== 'reading') return; // 用户已离开朗读页
+      if (!audioUrls || !audioUrls.length) {
+        toast('朗读合成失败，请稍后再试');
+        playerState.loading = false;
+        updateFloatPlayBtn();
+        return;
+      }
+      playerState.audioUrls = audioUrls;
+      playerState.currentChunk = 0;
+      playerState.loading = false;
+      playerState.open = true;
+      showPlayerOverlay();
+      playCurrentChunk();
+    }).catch(function (err) {
+      if (view !== 'reading') return;
+      console.error('TTS 合成失败:', err);
+      toast('朗读合成失败: ' + (err.message || '网络错误'));
+      playerState.loading = false;
+      updateFloatPlayBtn();
+    });
+  }
+
+  function showPlayerOverlay() {
+    var ov = document.getElementById('playerOverlay');
+    if (ov) ov.style.display = '';
+    var fp = document.getElementById('floatPlay');
+    if (fp) fp.style.display = 'none';
+    playerState.open = true;
+  }
+
+  function hidePlayerOverlay() {
+    var ov = document.getElementById('playerOverlay');
+    if (ov) ov.style.display = 'none';
+    var fp = document.getElementById('floatPlay');
+    if (fp) fp.style.display = '';
+    playerState.open = false;
+  }
+
+  function playCurrentChunk() {
+    if (!playerState.audioUrls.length) return;
+    var chunk = playerState.audioUrls[playerState.currentChunk];
+    if (!chunk || !chunk.url) return;
+
+    // 清理旧 audio
+    if (playerState.audio) {
+      playerState.audio.pause();
+      playerState.audio.removeAttribute('src');
+      playerState.audio.load();
+      playerState.audio = null;
+    }
+
+    var audio = new Audio();
+    audio.src = chunk.url;
+    audio.preload = 'auto';
+
+    audio.addEventListener('loadedmetadata', function () {
+      updateTotalTime();
+    });
+
+    audio.addEventListener('timeupdate', function () {
+      updatePlayerProgress();
+    });
+
+    audio.addEventListener('ended', function () {
+      playerState.currentChunk++;
+      if (playerState.currentChunk < playerState.audioUrls.length) {
+        playCurrentChunk();
+      } else {
+        // 播放完毕
+        playerState.playing = false;
+        playerState.currentChunk = playerState.audioUrls.length - 1;
+        updatePlayerUI();
+        markReadDone(storyId);
+      }
+    });
+
+    audio.addEventListener('error', function () {
+      console.error('音频加载失败:', chunk.url);
+      toast('音频加载失败，尝试下一段...');
+      playerState.currentChunk++;
+      if (playerState.currentChunk < playerState.audioUrls.length) {
+        playCurrentChunk();
+      } else {
+        playerState.playing = false;
+        updatePlayerUI();
+      }
+    });
+
+    playerState.audio = audio;
+    audio.play().then(function () {
+      playerState.playing = true;
+      updatePlayerUI();
+      setReaderTitlePlaying(true);
+    }).catch(function (e) {
+      console.error('播放失败:', e);
+      toast('播放失败，请点击播放按钮重试');
+      playerState.playing = false;
+      updatePlayerUI();
+    });
+  }
+
+  function updatePlayerUI() {
+    var btn = document.getElementById('playerPlayBtn');
+    if (btn) {
+      btn.innerHTML = playerState.playing ? ICONS.pause : ICONS.play;
+    }
+    updatePlayerProgress();
+  }
+
+  function updatePlayerProgress() {
+    if (!playerState.audio || !playerState.audio.duration) return;
+    var totalChunks = playerState.audioUrls.length;
+    if (totalChunks === 0) return;
+
+    var chunkProgress = playerState.audio.currentTime / playerState.audio.duration;
+    var overallProgress = (playerState.currentChunk + chunkProgress) / totalChunks * 100;
+    var progFill = document.getElementById('progFill');
+    if (progFill) progFill.style.width = Math.min(100, overallProgress) + '%';
+
+    var curTime = document.getElementById('curTime');
+    if (curTime) {
+      var t = playerState.audio.currentTime;
+      curTime.textContent = formatTime(Math.floor(t));
+    }
+
+    updateTotalTime();
+  }
+
+  function updateTotalTime() {
+    if (!playerState.audio || !playerState.audio.duration) return;
+    var totalTime = document.getElementById('totalTime');
+    if (totalTime) {
+      var estTotal = 0;
+      // 用当前 chunk 时长估算总时长
+      if (playerState.audio.duration) {
+        estTotal = playerState.audio.duration * playerState.audioUrls.length;
+      }
+      totalTime.textContent = formatTime(Math.floor(estTotal));
+    }
+  }
+
+  function togglePlayPause() {
+    if (!playerState.audio) return;
+    if (playerState.playing) {
+      playerState.audio.pause();
+      playerState.playing = false;
+      setReaderTitlePlaying(false);
+    } else {
+      playerState.audio.play().then(function () {
+        playerState.playing = true;
+        setReaderTitlePlaying(true);
+      }).catch(function () {});
+    }
+    updatePlayerUI();
+  }
+
+  function stopPlayer() {
+    if (playerState.audio) {
+      playerState.audio.pause();
+      playerState.audio.removeAttribute('src');
+      playerState.audio.load();
+    }
+    resetPlayerState();
+    hidePlayerOverlay();
+    setReaderTitlePlaying(false);
+  }
+
+  function updateFloatPlayBtn() {
+    var fp = document.getElementById('floatPlay');
+    if (!fp) return;
+    if (playerState.loading) {
+      fp.innerHTML = '<span class="fp-spin" style="display:inline-block;animation:spin 1s linear infinite">⟳</span>';
+      fp.disabled = true;
+    } else {
+      fp.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6L19 12 8 5.2z"/></svg>';
+      fp.disabled = false;
+    }
   }
 
 
