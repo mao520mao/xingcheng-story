@@ -40,14 +40,12 @@ public class MainActivity extends Activity {
             );
 
             webView = new WebView(this);
-            // V25+：百炼 TTS 语音朗读，需允许 file:// 跨域 XHR + HTTP 音频
+            // V27: 百炼 TTS 语音朗读（通过 Cloudflare Worker 代理解决 file:// 跨域）
             WebSettings ws = webView.getSettings();
             ws.setJavaScriptEnabled(true);
             ws.setDomStorageEnabled(true);
             ws.setAllowFileAccess(true);
             ws.setAllowContentAccess(true);
-            ws.setAllowFileAccessFromFileURLs(true);
-            ws.setAllowUniversalAccessFromFileURLs(true);
             ws.setMediaPlaybackRequiresUserGesture(false);
             ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
             ws.setCacheMode(WebSettings.LOAD_DEFAULT);

@@ -7,7 +7,10 @@
   'use strict';
 
   var API_KEY = 'sk-ws-H.ERLXIRL.vTuY.MEUCIQD5UTs8EQ0VhsqvLMyOp11fs-3zDOG1LrvshzCRPVr51AIgWYLm3Q4Jd3us5z62wXdtDeRN0YY06RW_eA8wqp_Vy_Q';
-  var API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
+  var PROXY_URL = 'https://bailian-tts.m476504127.workers.dev'; // Cloudflare Worker 代理，解决 file:// 跨域
+  var DIRECT_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
+  var USE_PROXY = true;  // true=走代理, false=直连
+  var API_URL = USE_PROXY ? PROXY_URL : DIRECT_URL;
   var MODEL = 'qwen3-tts-flash';
   var VOICE = 'Serena';   // 苏瑶 — 温柔小姐姐
 
@@ -18,7 +21,9 @@
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
       xhr.open('POST', API_URL, true);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + API_KEY);
+      if (!USE_PROXY) {
+        xhr.setRequestHeader('Authorization', 'Bearer ' + API_KEY);
+      }
       xhr.setRequestHeader('Content-Type', 'application/json');
       xhr.timeout = 60000; // 60s 超时（移动网络可能较慢）
 
@@ -40,21 +45,18 @@
       };
 
       xhr.onerror = function () {
-        reject(new Error('网络错误(可能被拦截,状态码' + (xhr.status || '0') + ')'));
+        reject(new Error('网络错误(状态码' + (xhr.status || '0') + ', 可能需部署Worker)'));
       };
 
       xhr.ontimeout = function () {
-        reject(new Error('请求超时'));
+        reject(new Error('请求超时(>60s)'));
       };
 
-      xhr.send(JSON.stringify({
-        model: MODEL,
-        input: {
-          text: text,
-          voice: voice || VOICE,
-          language_type: 'Chinese'
-        }
-      }));
+      var body = USE_PROXY
+        ? { text: text, voice: voice || VOICE, language_type: 'Chinese' }
+        : { model: MODEL, input: { text: text, voice: voice || VOICE, language_type: 'Chinese' } };
+
+      xhr.send(JSON.stringify(body));
     });
   }
 
