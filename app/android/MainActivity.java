@@ -40,7 +40,8 @@ public class MainActivity extends Activity {
             );
 
             webView = new WebView(this);
-            // V27: 百炼 TTS 语音朗读（通过 Cloudflare Worker 代理解决 file:// 跨域）
+            // 注：本工程为纯文字阅读 App，无语音朗读（TTS 已移除），
+            // 故恢复硬件加速（第一版即开启，毛玻璃为 GPU 加速，流畅）。
             WebSettings ws = webView.getSettings();
             ws.setJavaScriptEnabled(true);
             ws.setDomStorageEnabled(true);
@@ -64,7 +65,7 @@ public class MainActivity extends Activity {
             });
             setContentView(webView);
             webView.loadUrl("file:///android_asset/index.html");
-            Log.i(TAG, "星橙故事铺 WebView 启动（V25+ 百炼 TTS 语音朗读）");
+            Log.i(TAG, "星橙故事铺 WebView 启动（全屏无标题栏，已移除语音朗读）");
         } catch (Throwable t) {
             showError(t);
         }
