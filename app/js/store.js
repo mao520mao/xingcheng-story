@@ -10,7 +10,8 @@
 
   var DEFAULT_SETTINGS = {
     // V18: 已删除「阅读年龄」。偏好 = 书名，选中即开启对应书籍，支持多选，默认全开。
-    preferences: ['安徒生','王尔德','中国童话','成语故事','格林童话（果麦版）','历史传奇','意大利童话'],
+    preferences: ['安徒生','王尔德','中国童话','小巴掌童话','成语故事','格林童话（果麦版）','历史传奇','意大利童话'],
+    seenBooks: ['安徒生','王尔德','中国童话','小巴掌童话','成语故事','格林童话（果麦版）','历史传奇','意大利童话'], // 记账用：已在本地「见过」的书，避免重复自动开启
     voice: 'mom', // 朗读音色：mom / sister / story / night
     speed: 1.0, // 朗读语速：0.8 / 1.0 / 1.2
     fontSize: 'md', // 阅读字号：sm / md / lg / xl（默认标准，设置页不再提供调节）
@@ -32,7 +33,29 @@
       if (!raw) return clone(DEFAULT_STATE);
       var parsed = JSON.parse(raw);
       // 合并默认设置，兼容旧数据
+      // 先取用户本地原本存下的 seenBooks（必须在默认值合并之前读，
+      // 否则会被 DEFAULT_SETTINGS.seenBooks 填成全量，导致新书永远判断为「已见过」）
+      var _ps = parsed.settings || {};
+      var _origSeen = Array.isArray(_ps.seenBooks) ? _ps.seenBooks : null;
+      var _isArr = Array.isArray(_ps.preferences);
+
       parsed.settings = Object.assign(clone(DEFAULT_SETTINGS), parsed.settings || {});
+      // 数据迁移：新增书目后，老用户本地的 preferences 数组里没有这本新书，
+      // 会出现「资源在库里、设置里看得见、首页却一条推不出」的情况。
+      // 因此首次见到某本书时自动开启；用 seenBooks 记账，
+      // 保证用户之后手动关掉的书不会被下一次启动重新打开。
+      var _def = DEFAULT_SETTINGS.preferences;
+      // 首次引入该字段时，以用户此刻的偏好作为「已知」基线
+      var _seen = _origSeen ? _origSeen.slice()
+                : (_isArr ? _ps.preferences.slice() : _def.slice());
+      var _cur = Array.isArray(parsed.settings.preferences)
+               ? parsed.settings.preferences : clone(DEFAULT_SETTINGS.preferences);
+      _def.forEach(function (p) {
+        if (_cur.indexOf(p) < 0 && _seen.indexOf(p) < 0) _cur.push(p);
+        if (_seen.indexOf(p) < 0) _seen.push(p);
+      });
+      parsed.settings.preferences = _cur;
+      parsed.settings.seenBooks = _seen;
       // 数据迁移：旧版把亮度默认存成 0.6（整体压暗，像蒙了层黑罩），
       // 升级到全亮，避免历史 localStorage 残留暗值覆盖新默认。
       // 仅当亮度处于明显偏暗区间（<=0.8）才重置，用户主动调暗的 0.8~1.2 不受影响。

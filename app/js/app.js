@@ -61,7 +61,7 @@
   setTimeout(_loadStories, 60);
   /* V18 兴趣偏好 = 书名；偏好名即故事标签，选中即开启对应书籍，支持多选。
      偏好列表动态取自库内所有标签（按 PREFS_ORDER 排序），保证与故事 1:1 对应、永不漂移。 */
-  var PREFS_ORDER = ['安徒生','王尔德','中国童话','365夜故事','成语故事','格林童话（果麦版）','历史传奇','意大利童话'];
+  var PREFS_ORDER = ['安徒生','王尔德','中国童话','小巴掌童话','365夜故事','成语故事','格林童话（果麦版）','历史传奇','意大利童话'];
   function getPrefList(){
     var set={};
     stories.forEach(function(s){(s.tags||[]).forEach(function(t){set[t]=1;});});
@@ -782,7 +782,7 @@
   function prefIcon(name){
     var map={
       '安徒生':'bookStroke','王尔德':'bookStroke',
-      '中国童话':'bookStroke','365夜故事':'bookStroke','成语故事':'bookStroke','格林童话（果麦版）':'bookStroke',
+      '中国童话':'bookStroke','小巴掌童话':'bookStroke','365夜故事':'bookStroke','成语故事':'bookStroke','格林童话（果麦版）':'bookStroke',
       '历史传奇':'history','意大利童话':'bookStroke'
     };
     return ICONS[map[name]||'bookStroke']||'';
