@@ -60,15 +60,55 @@
   }
   setTimeout(_loadStories, 60);
   /* V18 兴趣偏好 = 书名；偏好名即故事标签，选中即开启对应书籍，支持多选。
-     偏好列表动态取自库内所有标签（按 PREFS_ORDER 排序），保证与故事 1:1 对应、永不漂移。 */
-  var PREFS_ORDER = ['安徒生','王尔德','中国童话','小巴掌童话','365夜故事','成语故事','格林童话（果麦版）','历史传奇','意大利童话'];
+     偏好列表动态取自库内所有标签（按 PREFS_ORDER 排序），保证与故事 1:1 对应、永不漂移。
+     ⚠️ 这里只放「短篇集合」的书 —— 兴趣偏好管的是「图书馆随机推什么」。
+     标了 type:'serial' 的连载书不进偏好列表，只出现在「长篇馆」（见下方 BOOK_RULES）。
+     因此新增连载小说时：只加 BOOK_RULES 一行即可，不要加进 PREFS_ORDER。 */
+  var PREFS_ORDER = ['安徒生','王尔德','中国童话','小巴掌童话','365夜故事','成语故事','格林童话（果麦版）','历史传奇','意大利童话','一分钟破案'];
+
+  /* ========== 书籍规则表（每本书可单独配置推送方式） ==========
+     新增长篇/连载小说时，只需要在下面加一行 type:'serial'，它就会自动
+     进入「长篇馆」按章节顺序阅读，同时自动退出图书馆的随机推送。
+       type:'short'  —— 短篇集合（默认）：进「图书馆」随机翻卡
+       type:'serial' —— 长篇 / 连载：进「长篇馆」，按库内顺序即原书顺序排列
+     author / desc 用于长篇馆卡片的展示，可选。 */
+  var BOOK_RULES = {
+    '边山狩猎': { type:'serial', author:'梁泊', desc:'从春到冬，跟着猎区少年走进大兴安岭的森林' },
+    '怪医杜立德': { type:'serial', author:'休·洛夫廷', desc:'会讲动物语言的医生，带着一群动物远航非洲' }
+  };
+  function bookType(name){
+    return (BOOK_RULES[name] && BOOK_RULES[name].type) || 'short';
+  }
+  function isSerial(s){ return bookType(s.collection)==='serial'; }
+  function bookRule(name){ return BOOK_RULES[name] || {}; }
+  /* 一本连载书的全部章节 —— 用库内数组顺序，即原书顺序 */
+  function bookChapters(name){
+    return stories.filter(function(s){ return s.collection===name; });
+  }
+  /* 所有被标为连载的书名。
+     ⚠️ 这里【不按兴趣偏好过滤】—— 兴趣偏好只管图书馆随机推什么，
+     连载书根本不在偏好列表里，若再按 prefs 过滤会导致长篇馆永远为空。
+     排序：优先按 BOOK_RULES 的书写顺序，其次按库内出现顺序。 */
+  function serialBooks(){
+    var seen={}, out=[];
+    stories.forEach(function(s){
+      if(isSerial(s) && !seen[s.collection]){ seen[s.collection]=true; out.push(s.collection); }
+    });
+    out.sort(function(a,b){
+      var ia=PREFS_ORDER.indexOf(a), ib=PREFS_ORDER.indexOf(b);
+      return (ia<0?99:ia)-(ib<0?99:ib);
+    });
+    return out;
+  }
   function getPrefList(){
     var set={};
     stories.forEach(function(s){(s.tags||[]).forEach(function(t){set[t]=1;});});
     var out=[];
     PREFS_ORDER.forEach(function(p){ if(set[p]){ out.push(p); delete set[p]; } });
     Object.keys(set).forEach(function(p){ out.push(p); });
-    return out;
+    /* 连载书不进兴趣偏好 —— 它们归「长篇馆」，且不该参与图书馆随机推送。
+       （即使旧版本本地偏好里残留了连载书名，这里也会把它挡掉） */
+    return out.filter(function(p){ return bookType(p)!=='serial'; });
   }
   function prefTagMap(){
     var m={}; getPrefList().forEach(function(p){ m[p]=[p]; }); return m;
@@ -127,7 +167,11 @@
     leaf:     '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 6-14 14-14 0 8-6 14-14 14z"/><path d="M5 19c4-4 8-6 12-7"/></svg>',
     rocket:   '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c3 2 5 6 5 10l-3 3h-4l-3-3c0-4 2-8 5-10z"/><circle cx="12" cy="10" r="2"/><path d="M9 16l-2.5 4 4-1zM15 16l2.5 4-4-1z"/></svg>',
     myth:     '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M16.9 16.9l2.1 2.1M4.9 19.1l2.1-2.1M16.9 7.1l2.1-2.1"/></svg>',
-    history:  '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9a2 2 0 0 1 2 2v12a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2V4z"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/><path d="M9.5 9.5l1.4 2.2 2.6-3.4M9.5 15h4"/></svg>'
+    history:  '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9a2 2 0 0 1 2 2v12a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2V4z"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/><path d="M9.5 9.5l1.4 2.2 2.6-3.4M9.5 15h4"/></svg>',
+    /* 设置页偏好图标：一分钟破案（放大镜） */
+    magnifier:'<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4L20.5 20.5"/><path d="M8 10.5h5M10.5 8v5"/></svg>',
+    /* 阅读页右下角悬浮目录按钮（三条横线 + 圆点，描边） */
+    toc:      '<svg class="ico-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 6.5h13M4 12h13M4 17.5h9"/><circle cx="19.6" cy="6.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="19.6" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.6" cy="17.5" r="1.1" fill="currentColor" stroke="none"/></svg>'
   };
 
   /* DOM 引用 */
@@ -195,6 +239,9 @@
     if(!_storiesReady || !stories.length) return [];  /* 数据未就绪，返回空数组 */
     var st=Store.getSettings();
     var allPool=stories.slice();   // V18: 已删除阅读年龄筛选，全库参与推荐
+    // 长篇 / 连载书籍不参与随机翻卡（它们进「长篇馆」按顺序读，随机推会剧透后续章节）
+    var shortPool=allPool.filter(function(s){ return !isSerial(s); });
+    if(shortPool.length) allPool=shortPool;
     // 偏好筛选（V18: 偏好名即标签名，选中即开启对应书籍）。
     // 多选时取并集（任一选中偏好命中即入选）；若全部取消，则回退为不过滤，避免首页空白。
     var prefs = st.preferences || [];
@@ -516,6 +563,20 @@
     var fontId=st.fontSize;
     var fCls='fs-'+(fontId==='small'?'sm':fontId==='standard'?'md':fontId==='large'?'lg':fontId==='xlarge'?'xl':fontId||'md');
 
+    /* 长篇连载：记住所属书、章节序号、下一章 id（右下角悬浮目录按钮只在这里出现） */
+    var serial=isSerial(s);
+    var chTotal=0, chNo=0, nextId=null;
+    if(serial){
+      serialBook=s.collection;
+      var _chs=bookChapters(s.collection);
+      chTotal=_chs.length;
+      for(var _k=0;_k<_chs.length;_k++){ if(_chs[_k].id===s.id){ chNo=_k+1; break; } }
+      if(chNo>0 && chNo<chTotal) nextId=_chs[chNo].id;
+    }
+    var chapPill  = serial ? '<span class="reader-tag orange">第 '+chNo+' 章 / 共 '+chTotal+' 章</span>' : '';
+    var nextBtn   = nextId ? '<button class="reader-next-btn" id="readerNextBtn" data-next="'+esc(nextId)+'">读下一章 →</button>' : '';
+    var homeLabel = serial ? '返回长篇馆' : '返回图书馆';
+
     $app.innerHTML =
       '<div class="reader">'+
         /* 渐变装饰圆 */
@@ -528,6 +589,7 @@
             '<div class="reader-head-main">'+
               '<h1 class="reader-title">'+esc(s.title)+'</h1>'+
               '<div class="reader-tags">'+
+                chapPill+
                 tagPills(s.tags.slice(0,1),'dark')+
                 tagPills(s.tags.slice(1),'orange')+
               '</div>'+
@@ -536,13 +598,16 @@
           /* 正文滚动区 */
           '<main class="reader-scroll" id="readerScroll">'+
             '<article class="reading-body '+fCls+'" id="readingBody">'+body+'</article>'+
-            /* 底部收藏按钮 + 返回图书馆按钮 */
+            /* 底部：下一章 + 返回 + 收藏 */
             '<div class="reader-fav-bar" id="readerFavBar">'+
-              '<button class="reader-home-btn" id="readerHomeBtn">'+ICONS.home+' 返回图书馆</button>'+
+              nextBtn+
+              '<button class="reader-home-btn" id="readerHomeBtn">'+ICONS.home+' '+homeLabel+'</button>'+
               '<button class="reader-fav-btn" id="readerFavBtn">'+(fav?'★ 已藏进星星里 ✦':'☆ 藏进星星里')+'</button>'+
             '</div>'+
           '</main>'+
-        '</div>';
+        '</div>'+
+        /* 长篇连载专属：右下角悬浮目录按钮 + 目录抽屉（默认隐藏，点按钮才出现） */
+        (serial ? serialTocFab()+serialTocPanel(id) : '');
 
     bindReaderEvents(id);
 
@@ -592,6 +657,68 @@
       updateReaderFavBtn(id);
       toast(on?'已藏进星星里 ✦':'已取消收藏');
     });
+
+    /* 长篇连载：右下角悬浮目录按钮 */
+    var fab=$('#serialTocFab');
+    if(fab){
+      fab.addEventListener('click',function(){ openSerialToc(); });
+      var mask=$('#serialTocMask');
+      var close=$('#serialTocClose');
+      if(mask) mask.addEventListener('click',function(){ closeSerialToc(); });
+      if(close) close.addEventListener('click',function(){ closeSerialToc(); });
+      $$('.toc-item').forEach(function(b){
+        b.addEventListener('click',function(){
+          var tid=b.getAttribute('data-id');
+          closeSerialToc();
+          if(tid && tid!==storyId) openReading(tid);
+        });
+      });
+    }
+
+    /* 长篇连载：读下一章 */
+    var nb=$('#readerNextBtn');
+    if(nb) nb.addEventListener('click',function(){
+      openReading(nb.getAttribute('data-next'));
+    });
+  }
+
+  /* ---------- 长篇连载：右下角悬浮目录 ---------- */
+  function serialTocFab(){
+    return '<button class="serial-toc-fab" id="serialTocFab" aria-label="章节目录">'+ICONS.toc+'</button>';
+  }
+  function serialTocPanel(curId){
+    var name=serialBook, chs=bookChapters(name), rule=bookRule(name);
+    var items=chs.map(function(s,i){
+      var cur=(s.id===curId), done=Store.isRead(s.id);
+      return '<button class="toc-item'+(cur?' current':'')+(done?' done':'')+'" data-id="'+esc(s.id)+'">'+
+        '<span class="toc-no">'+String(i+1).padStart(2,'0')+'</span>'+
+        '<span class="toc-title">'+esc(s.title)+'</span>'+
+        (cur ? '<span class="toc-here">在读</span>' : (done ? '<span class="toc-here passed">✓</span>' : ''))+
+      '</button>';
+    }).join('');
+    return '<div class="serial-toc-mask" id="serialTocMask"></div>'+
+      '<div class="serial-toc-panel" id="serialTocPanel">'+
+        '<div class="toc-head">'+
+          '<div class="toc-head-main">'+
+            '<h3 class="toc-h3">目录</h3>'+
+            '<p class="toc-sub">'+esc(name)+' · 共 '+chs.length+' 章'+(rule.author?' · '+esc(rule.author)+' 著':'')+'</p>'+
+          '</div>'+
+          '<button class="toc-close" id="serialTocClose" aria-label="关闭目录">'+ICONS.close+'</button>'+
+        '</div>'+
+        '<div class="toc-list" id="tocList">'+items+'</div>'+
+      '</div>';
+  }
+  function openSerialToc(){
+    var p=$('#serialTocPanel'), m=$('#serialTocMask');
+    if(!p) return;
+    p.classList.add('open'); if(m) m.classList.add('show');
+    var list=$('#tocList'), cur=$('.toc-item.current');
+    if(list && cur) list.scrollTop=Math.max(0, cur.offsetTop-list.clientHeight/2+cur.offsetHeight/2);
+  }
+  function closeSerialToc(){
+    var p=$('#serialTocPanel'), m=$('#serialTocMask');
+    if(p) p.classList.remove('open');
+    if(m) m.classList.remove('show');
   }
 
   /* 标题颜色随阅读高亮（已移除语音朗读，仅保留标题柔白态） */
@@ -607,9 +734,12 @@
     btn.classList.toggle('favorited', on);
   }
 
-  /* 从朗读页返回图书馆 */
+  /* 从朗读页返回：从长篇馆进来的回到长篇馆书架（章节目录在正文右下角悬浮按钮里），
+     否则回图书馆 */
   function goBackFromReader(){
-    view='library';$nav.style.display='';batch=pickBatch();topIndex=0;
+    $nav.style.display='';
+    if(serialBook){ serialBook=null; renderSerials(); return; }
+    view='library';batch=pickBatch();topIndex=0;
     renderLibrary();
   }
 
@@ -713,6 +843,118 @@
 
 
   /* ================================================
+   长篇馆 — 连载 / 长篇小说按顺序阅读
+   ================================================ */
+  var serialBook = null;   // 当前打开章节列表的书名，null = 书籍列表页
+
+  function renderSerials(){
+    // 已选中某本书 → 显示它的章节列表
+    if(serialBook){ renderSerialChapters(); return; }
+    document.body.classList.remove('reader-open','view-library','view-settings','view-vault');
+    document.body.classList.add('view-serials');
+    view='serials'; $nav.style.display='';
+
+    var books=serialBooks();
+    var list='', empty='';
+    if(!books.length){
+      empty='<div class="empty-state">'+
+        '<img src="assets/ip_whale.jpg" alt="" class="empty-whale" />'+
+        '<p class="empty-title">长篇馆还空着</p>'+
+        '<p class="empty-sub">连载小说会一本本排好队，等着你从头读起 📖</p>'+
+      '</div>';
+    }else{
+      list=books.map(function(n,i){ return serialBookCard(n,i); }).join('');
+    }
+
+    $app.innerHTML =
+      '<header class="serial-head">'+
+        '<h2 class="serial-title">长篇馆</h2>'+
+        '<p class="serial-sub">按章节顺序，一本一本读完</p>'+
+      '</header>'+
+      (list ? '<div class="serial-list">'+list+'</div>' : empty);
+
+    /* 点书卡 = 直接开始读：从第一篇未读的章节进入正文（目录在正文右下角悬浮按钮里） */
+    $$('.scard').forEach(function(c){
+      c.addEventListener('click',function(){
+        var name=c.getAttribute('data-book');
+        var chs=bookChapters(name);
+        var read=chs.filter(function(s){ return Store.isRead(s.id); }).length;
+        var next=chs[read] || chs[0];
+        if(!next) return;
+        serialBook=name;
+        openReading(next.id);
+      });
+    });
+  }
+
+  /* 长篇馆书籍卡片 */
+  function serialBookCard(name, idx){
+    var chs=bookChapters(name);
+    var rule=bookRule(name);
+    var cover=COVER_POOL[(idx||0) % COVER_POOL.length];
+    var read=chs.filter(function(s){ return Store.isRead(s.id); }).length;
+    var pct=chs.length?Math.round(read/chs.length*100):0;
+    var nextIdx=read;                       // 第一篇未读的章节
+    var next=chs[nextIdx] || chs[chs.length-1];
+    var cta = read===0 ? '从第 1 章开始'
+            : read>=chs.length ? '再读一遍'
+            : '继续读第 '+(read+1)+' 章';
+    return '<article class="scard" data-book="'+esc(name)+'">'+
+      '<div class="scard-cover">'+
+        '<img src="'+esc(cover)+'" alt="'+esc(name)+' 封面" class="scard-cover-img" />'+
+      '</div>'+
+      '<div class="scard-body">'+
+        '<h3 class="scard-title">'+esc(name)+'</h3>'+
+        (rule.author?'<p class="scard-author">'+esc(rule.author)+' 著</p>':'')+
+        (rule.desc?'<p class="scard-desc">'+esc(rule.desc)+'</p>':'')+
+        '<div class="scard-prog">'+
+          '<div class="vprog-bar"><div class="vprog-fill" style="width:'+pct+'%"></div></div>'+
+          '<span class="vprog-pct">读到第 '+Math.min(read+(read>=chs.length?0:1), chs.length)+' 章 / 共 '+chs.length+' 章</span>'+
+        '</div>'+
+        (next?'<span class="scard-cta">'+cta+'</span>':'')+
+      '</div>'+
+    '</article>';
+  }
+
+  /* 章节列表页 */
+  function renderSerialChapters(){
+    document.body.classList.remove('reader-open','view-library','view-settings','view-vault');
+    document.body.classList.add('view-serials');
+    view='serials'; $nav.style.display='';
+
+    var name=serialBook;
+    var chs=bookChapters(name);
+    var rule=bookRule(name);
+
+    var items=chs.map(function(s,i){
+      var done=Store.isRead(s.id);
+      return '<button class="chapter-item'+(done?' done':'')+'" data-id="'+esc(s.id)+'">'+
+        '<span class="ch-no">第 '+(i+1)+' 章</span>'+
+        '<span class="ch-main">'+
+          '<span class="ch-title">'+esc(s.title)+'</span>'+
+          '<span class="ch-meta">'+(s.duration||1)+' 分钟 · '+s.content.length+' 字</span>'+
+        '</span>'+
+        '<span class="ch-state">'+(done?'已读完':'')+'</span>'+
+      '</button>';
+    }).join('');
+
+    $app.innerHTML =
+      '<header class="serial-head serial-head-sub">'+
+        '<button class="serial-back" aria-label="返回长篇馆">‹ 返回</button>'+
+        '<h2 class="serial-title">'+esc(name)+'</h2>'+
+        '<p class="serial-sub">'+chs.length+' 章'+(rule.author?' · '+esc(rule.author)+' 著':'')+'</p>'+
+      '</header>'+
+      '<div class="chapter-list">'+items+'</div>';
+
+    $$('.serial-back')[0].addEventListener('click',function(){
+      serialBook=null; renderSerials();
+    });
+    $$('.chapter-item').forEach(function(b){
+      b.addEventListener('click',function(){ openReading(b.getAttribute('data-id')); });
+    });
+  }
+
+  /* ================================================
    设置 — 分区卡片式布局
    ================================================ */
   function renderSettings(){
@@ -783,7 +1025,8 @@
     var map={
       '安徒生':'bookStroke','王尔德':'bookStroke',
       '中国童话':'bookStroke','小巴掌童话':'bookStroke','365夜故事':'bookStroke','成语故事':'bookStroke','格林童话（果麦版）':'bookStroke',
-      '历史传奇':'history','意大利童话':'bookStroke'
+      '历史传奇':'history','意大利童话':'bookStroke',
+      '一分钟破案':'magnifier'
     };
     return ICONS[map[name]||'bookStroke']||'';
   }
@@ -839,8 +1082,9 @@
         var tgt=item.getAttribute('data-view');
         if(view==='reading'){$nav.style.display='';}
         setNavActive(tgt);
-        if(tgt==='library'){batch=pickBatch();topIndex=0;renderLibrary();}
-        else if(tgt==='vault'){renderVault();}
+        if(tgt==='library'){serialBook=null;batch=pickBatch();topIndex=0;renderLibrary();}
+        else if(tgt==='serials'){serialBook=null;renderSerials();}
+        else if(tgt==='vault'){serialBook=null;renderVault();}
         else if(tgt==='settings'){renderSettings();}
       });
     });

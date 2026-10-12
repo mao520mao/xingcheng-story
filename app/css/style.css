@@ -813,6 +813,135 @@ body.native-app .star-field { opacity: 0.5; }
   contain: content style;
 }
 
+/* ================================================ 长篇馆 ================================================ */
+.serial-head { margin-bottom: 16px; }
+.serial-title { margin: 0 0 4px; font-size: 24px; font-weight: 700; color: var(--text-bright); }
+.serial-sub { margin: 0; font-size: 13px; color: var(--text-muted); }
+.serial-head-sub { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.serial-back {
+  margin-bottom: 10px; padding: 0;
+  background: none; border: none;
+  font-size: 14px; font-weight: 600; color: var(--orange-warm); cursor: pointer;
+}
+.serial-list { display: flex; flex-direction: column; gap: 16px; }
+
+.scard {
+  display: flex; gap: 14px; padding: 12px; cursor: pointer;
+  background: linear-gradient(165deg, rgba(35,42,72,.55), rgba(18,24,46,.75));
+  border: 1px solid rgba(255,255,255,.06); border-radius: var(--r-lg);
+}
+.scard-cover { flex: 0 0 92px; width: 92px; aspect-ratio: 3/4; border-radius: var(--r-md); overflow: hidden; }
+.scard-cover-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scard-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.scard-title { margin: 0 0 2px; font-size: 18px; font-weight: 700; color: var(--text-bright); }
+.scard-author { margin: 0 0 6px; font-size: 12px; color: var(--text-muted); }
+.scard-desc {
+  margin: 0 0 10px; font-size: 12.5px; line-height: 1.55; color: var(--text-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.scard-prog { display: flex; align-items: center; margin-top: auto; }
+.scard-cta {
+  align-self: flex-start; margin-top: 10px;
+  font-size: 12px; font-weight: 700; color: var(--text-bright);
+  padding: 6px 14px; border-radius: var(--r-full); background: var(--cta-gradient);
+}
+
+.chapter-list { display: flex; flex-direction: column; gap: 8px; }
+.chapter-item {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; text-align: left; cursor: pointer;
+  background: rgba(35,42,72,.4);
+  border: 1px solid rgba(255,255,255,.06); border-radius: var(--r-md);
+  color: var(--text-bright);
+}
+.chapter-item.done { opacity: .58; }
+.ch-no { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--orange-warm); }
+.ch-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ch-title { font-size: 15px; font-weight: 600; }
+.ch-meta { font-size: 11.5px; color: var(--text-muted); }
+.ch-state { flex: 0 0 auto; font-size: 11px; color: var(--orange-warm); }
+
+/* ---------- 阅读页：长篇连载专属 悬浮目录按钮 + 目录抽屉 ---------- */
+.serial-toc-fab {
+  position: absolute; right: 18px; bottom: 26px; z-index: 30;
+  width: 54px; height: 54px; border-radius: 50%;
+  border: 1px solid rgba(255,198,139,.45);
+  background: var(--cta-gradient); color: var(--chip-dark);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35), var(--glow-orange);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform .15s ease;
+}
+.serial-toc-fab:active { transform: scale(.93); }
+.serial-toc-fab .ico-svg { width: 24px; height: 24px; }
+
+.serial-toc-mask {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 40;
+  background: rgba(3,6,22,.62);
+  opacity: 0; pointer-events: none; transition: opacity .22s ease;
+}
+.serial-toc-mask.show { opacity: 1; pointer-events: auto; }
+
+.serial-toc-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 41;
+  max-height: 74%; display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #1b2240, #10162c);
+  border-top: 1px solid rgba(255,198,139,.28);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -10px 30px rgba(0,0,0,.45);
+  transform: translateY(102%);
+  transition: transform .26s cubic-bezier(.22,.9,.3,1);
+}
+.serial-toc-panel.open { transform: translateY(0); }
+.toc-head {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 16px 18px 12px; border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.toc-head-main { flex: 1; min-width: 0; }
+.toc-h3 { margin: 0 0 3px; font-size: 18px; font-weight: 700; color: var(--text-bright); }
+.toc-sub { margin: 0; font-size: 12px; color: var(--text-muted); }
+.toc-close {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,.08); color: var(--text-bright);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.toc-close .ico-svg { width: 16px; height: 16px; }
+.toc-list {
+  flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 10px 12px 14px; display: flex; flex-direction: column; gap: 6px;
+}
+.toc-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 12px; text-align: left; cursor: pointer;
+  background: rgba(35,42,72,.45);
+  border: 1px solid rgba(255,255,255,.06); border-radius: 12px;
+  color: var(--text-bright); font-family: var(--font);
+}
+.toc-no { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--orange-warm); opacity: .85; }
+.toc-title {
+  flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.toc-here {
+  flex: 0 0 auto; font-size: 11px; font-weight: 700; color: var(--chip-dark);
+  background: var(--cta-gradient); padding: 3px 8px; border-radius: var(--r-full);
+}
+.toc-here.passed { background: rgba(255,198,139,.16); color: var(--orange-warm); }
+.toc-item.done .toc-title { color: var(--text-muted); }
+.toc-item.current { background: rgba(255,198,139,.12); border-color: rgba(255,198,139,.4); }
+.toc-item.current .toc-title { color: var(--orange-warm); }
+
+/* 阅读页底部「读下一章」按钮（仅长篇连载出现） */
+.reader-next-btn {
+  display: flex; align-items: center; gap: 6px;
+  border: none; border-radius: var(--r-full);
+  background: var(--cta-gradient); color: var(--chip-dark);
+  padding: 12px 26px; font-size: 15px; font-weight: 700;
+  font-family: var(--font); cursor: pointer;
+  box-shadow: var(--glow-orange);
+  transition: all .2s ease;
+}
+.reader-next-btn:active { transform: scale(.96); }
+
 /* ================================================ 响应式 ================================================ */
 @media (max-width: 460px) {
   body { align-items: stretch; justify-content: stretch; }
